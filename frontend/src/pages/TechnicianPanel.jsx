@@ -216,6 +216,28 @@ export default function TechnicianPanel() {
         </div>
       </div>
 
+      {/* Inline API Offline / Recovery Banner */}
+      {!apiOnline && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-3 backdrop-blur-sm shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">⚠️</span>
+            <span>
+              SCADA API is offline or reconnecting. Telemetry display will update automatically once backend is reached.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              fetchQueue()
+              fetchHistory()
+            }}
+            className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold transition shrink-0 cursor-pointer"
+          >
+            Retry Now
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Maintenance Queue */}
         <div className="lg:col-span-5 space-y-3">

@@ -236,6 +236,25 @@ export default function ManagerPanel() {
         </div>
       </div>
 
+      {/* Inline API Offline / Recovery Banner */}
+      {!apiOnline && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-3 backdrop-blur-sm shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">⚠️</span>
+            <span>
+              Executive SCADA API is offline or reconnecting. Displaying latest metrics — automatically retrying every 3s...
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchSummary}
+            className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold transition shrink-0 cursor-pointer"
+          >
+            Retry Now
+          </button>
+        </div>
+      )}
+
       {loading && !summary ? (
         <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
           <svg className="w-5 h-5 animate-spin mr-2" fill="none" viewBox="0 0 24 24">

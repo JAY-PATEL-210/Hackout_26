@@ -45,9 +45,13 @@ export default function SimulatorPage() {
       if (headerRows) setRowsProcessed(parseInt(headerRows, 10))
       if (headerStep) setCurrentStep(parseInt(headerStep, 10))
       if (headerTotal) setTotalSteps(parseInt(headerTotal, 10))
-      if (headerStatus && (headerStatus === 'playing' || headerStatus === 'paused')) {
-        setSimStatus(headerStatus)
-        setHasStarted(true)
+      if (headerStatus) {
+        if (headerStatus === 'playing' || headerStatus === 'paused') {
+          setSimStatus(headerStatus)
+          setHasStarted(true)
+        } else if (headerStatus === 'idle' || headerStatus === 'stopped') {
+          setSimStatus('idle')
+        }
       }
 
       // Also get primary timestamp from latest asset reading
@@ -78,6 +82,8 @@ export default function SimulatorPage() {
           } else if (statusData.is_paused) {
             setSimStatus('paused')
             setHasStarted(true)
+          } else {
+            setSimStatus('idle')
           }
         }
       } catch {
@@ -280,6 +286,25 @@ export default function SimulatorPage() {
           </button>
         </div>
       </div>
+
+      {/* Inline Offline/Error Banner */}
+      {!apiOnline && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-3 backdrop-blur-sm shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">⚠️</span>
+            <span>
+              SCADA backend is offline or restarting on port 8000. Reconnecting automatically every 2s...
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchTelemetry}
+            className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold transition shrink-0 cursor-pointer"
+          >
+            Retry Now
+          </button>
+        </div>
+      )}
 
       {/* Confirmation Message Alert */}
       {confirmationMessage && (

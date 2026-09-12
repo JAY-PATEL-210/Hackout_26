@@ -14,6 +14,7 @@ Concurrency: Thread-safe in-memory simulation state protected by an asyncio.Lock
 import os
 import sys
 import json
+import pickle
 import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime
@@ -161,8 +162,26 @@ class SimulationManager:
         if self._initialized:
             return
         live_path = os.path.join(BASE_DIR, "data", "live_input_dataset.csv")
+        cache_path = os.path.join(BASE_DIR, "data", "cached_live_scored.pkl")
+
         if not os.path.exists(live_path):
             raise FileNotFoundError(f"Missing live dataset at: {live_path}")
+
+        # Demo mode safeguard: load pre-scored cached sequence if available and up-to-date
+        if os.path.exists(cache_path) and os.path.getmtime(cache_path) >= os.path.getmtime(live_path):
+            print(f"[SimulationManager: DEMO MODE] Loading verified pre-scored cache from {cache_path}...", flush=True)
+            try:
+                with open(cache_path, "rb") as f:
+                    cached = pickle.load(f)
+                self.timestamps = cached["timestamps"]
+                self.dataset_by_step = cached["dataset_by_step"]
+                self.total_steps = len(self.timestamps)
+                self.reset_sync()
+                self._initialized = True
+                print(f"[SimulationManager: DEMO MODE] Ready. Replaying verified sequence ({self.total_steps} steps, instant startup).", flush=True)
+                return
+            except Exception as err:
+                print(f"[SimulationManager] Warning: could not load cache ({err}). Re-scoring...", flush=True)
 
         print("[SimulationManager] Loading and pre-scoring live_input_dataset.csv...", flush=True)
         raw_df = pd.read_csv(live_path)
@@ -181,6 +200,17 @@ class SimulationManager:
         for ts, group in grouped:
             rows = group.drop(columns=["timestamp_dt"], errors="ignore").to_dict(orient="records")
             self.dataset_by_step.append(rows)
+
+        # Cache pre-scored sequence for future instant restarts
+        try:
+            with open(cache_path, "wb") as f:
+                pickle.dump({
+                    "timestamps": self.timestamps,
+                    "dataset_by_step": self.dataset_by_step
+                }, f)
+            print(f"[SimulationManager: DEMO MODE] Successfully cached pre-scored dataset to {cache_path}", flush=True)
+        except Exception as err:
+            print(f"[SimulationManager] Warning: failed to save pre-score cache: {err}", flush=True)
 
         # Initial baseline state (step 0 populated so turbines show normal status)
         self.reset_sync()

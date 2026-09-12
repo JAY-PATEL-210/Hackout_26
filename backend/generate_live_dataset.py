@@ -14,12 +14,34 @@ Differences from training dataset:
 """
 
 import os
+import sys
+import argparse
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
 
-def generate_live_data():
+def generate_live_data(force: bool = False):
+    output_dir = os.path.join(os.path.dirname(__file__), "data")
+    output_path = os.path.join(output_dir, "live_input_dataset.csv")
+
+    # Fault window for Turbine 5: starts at 80% through the timeline (step 3456)
+    FAULT_TURBINE_ID = 5
+    FAULT_START_STEP = 3456
+
+    # Demo mode safeguard: if verified dataset already exists and force is False, use cache
+    if os.path.exists(output_path) and os.path.getsize(output_path) > 0 and not force:
+        print("=" * 88)
+        print(" [DEMO MODE SAFEGUARD] VERIFIED DATASET CACHE DETECTED")
+        print("=" * 88)
+        print(f"[✓] Using cached live dataset: {output_path}")
+        print("[✓] Re-running simulator will replay the exact same verified sequence.")
+        print("[✓] Random re-generation skipped to prevent sequence drift. (Use --force to override)\n", flush=True)
+        cached_df = pd.read_csv(output_path)
+        print_summary_statistics(cached_df, FAULT_TURBINE_ID, FAULT_START_STEP)
+        return cached_df
+
+    print("[*] Generating fresh live SCADA dataset (Seed=7, Fault on Turbine 5)...", flush=True)
     # 1. Reproducibility with independent seed
     SEED = 7
     np.random.seed(SEED)
@@ -253,4 +275,13 @@ def print_summary_statistics(df, fault_turbine_id, fault_start_step):
 
 
 if __name__ == "__main__":
-    generate_live_data()
+    parser = argparse.ArgumentParser(
+        description="Demo mode safeguard for live SCADA dataset generator."
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force regeneration of live dataset, bypassing demo mode safeguard."
+    )
+    args = parser.parse_args()
+    generate_live_data(force=args.force)

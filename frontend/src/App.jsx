@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import ErrorBoundary from './components/ErrorBoundary'
 import SimulatorPage from './pages/SimulatorPage'
 import UserPanel from './pages/UserPanel'
 import TechnicianPanel from './pages/TechnicianPanel'
@@ -13,16 +14,46 @@ export default function App() {
         {/* Top persistent navigation bar */}
         <Navbar />
 
-        {/* Main Routed Content */}
+        {/* Main Routed Content protected by Global Error Boundary */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-          <Routes>
-            <Route path="/" element={<SimulatorPage />} />
-            <Route path="/user" element={<UserPanel />} />
-            <Route path="/technician" element={<TechnicianPanel />} />
-            <Route path="/manager" element={<ManagerPanel />} />
-            {/* Fallback redirect */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <ErrorBoundary title="Platform System Error">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <ErrorBoundary title="Simulator View Error">
+                    <SimulatorPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/user"
+                element={
+                  <ErrorBoundary title="User Fleet View Error">
+                    <UserPanel />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/technician"
+                element={
+                  <ErrorBoundary title="Technician View Error">
+                    <TechnicianPanel />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/manager"
+                element={
+                  <ErrorBoundary title="Manager View Error">
+                    <ManagerPanel />
+                  </ErrorBoundary>
+                }
+              />
+              {/* Fallback redirect */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
 
         {/* Persistent Footer */}

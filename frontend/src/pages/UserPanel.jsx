@@ -426,7 +426,26 @@ export default function UserPanel() {
         </div>
       )}
 
-      {/* Offline warning */}
+      {/* Inline Offline/Error Banner */}
+      {!apiOnline && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-3 backdrop-blur-sm shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">⚠️</span>
+            <span>
+              Backend API temporarily unreachable on port 8000. Reconnecting automatically every 2s...
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchAssets}
+            className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold transition shrink-0 cursor-pointer"
+          >
+            Retry Now
+          </button>
+        </div>
+      )}
+
+      {/* Offline empty warning */}
       {!apiOnline && assets.length === 0 && !loading && (
         <div className="p-6 rounded-2xl bg-rose-950/30 border border-rose-500/30 text-center">
           <p className="text-rose-300 text-sm font-medium">
