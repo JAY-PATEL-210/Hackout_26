@@ -159,6 +159,29 @@ def score_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     result_df["anomaly_score"] = np.round(anomaly_scores, 4)
     result_df["risk_level"] = risk_levels
 
+    # Feature attribution ("why flagged"):
+    # Compute absolute z-score for bearing_vibration, gearbox_temp, power_output using stored baselines
+    # and return top 1-2 features by z-score magnitude per row as a list of {feature, z_score} objects.
+    vib_raw_z = feature_df["bearing_vibration_raw_z"].values
+    temp_raw_z = feature_df["gearbox_temp_raw_z"].values
+    pwr_raw_z = feature_df["power_output_raw_z"].values
+
+    why_flagged_col = []
+    for v, t, p in zip(vib_raw_z, temp_raw_z, pwr_raw_z):
+        candidates = [
+            {"feature": "bearing_vibration", "z_score": round(float(v), 1), "abs_z": abs(float(v))},
+            {"feature": "gearbox_temp", "z_score": round(float(t), 1), "abs_z": abs(float(t))},
+            {"feature": "power_output", "z_score": round(float(p), 1), "abs_z": abs(float(p))},
+        ]
+        candidates.sort(key=lambda item: item["abs_z"], reverse=True)
+        # Top 1-2 features by magnitude: always include top 1; include top 2 if abs_z >= 1.0 or >= 0.4 * top 1
+        top_list = [{"feature": candidates[0]["feature"], "z_score": candidates[0]["z_score"]}]
+        if len(candidates) > 1 and (candidates[1]["abs_z"] >= 1.0 or candidates[1]["abs_z"] >= 0.4 * candidates[0]["abs_z"]):
+            top_list.append({"feature": candidates[1]["feature"], "z_score": candidates[1]["z_score"]})
+        why_flagged_col.append(top_list)
+
+    result_df["why_flagged"] = why_flagged_col
+
     # Rule-based safety backstop:
     # If bearing_vibration > 5.0 OR gearbox_temp > 75, force risk_level to at least "High"
     safety_backstop_mask = (result_df["bearing_vibration"] > 5.0) | (result_df["gearbox_temp"] > 75.0)

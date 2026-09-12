@@ -337,6 +337,7 @@ async def get_assets(response: Response):
                 "status": get_status_string(tid, risk),
                 "last_updated": row.get("timestamp"),
                 "anomaly_score": float(row.get("anomaly_score", 0.0)),
+                "why_flagged": row.get("why_flagged", []),
                 "sensor_readings": {
                     "wind_speed": float(row.get("wind_speed", 0.0)),
                     "rpm": float(row.get("rpm", 0.0)),
@@ -384,7 +385,8 @@ async def get_turbine_history(
                 "bearing_vibration": float(row.get("bearing_vibration", 0.0)),
                 "power_output": float(row.get("power_output", 0.0)),
                 "anomaly_score": float(row.get("anomaly_score", 0.0)),
-                "risk_level": row.get("risk_level", "Low")
+                "risk_level": row.get("risk_level", "Low"),
+                "why_flagged": row.get("why_flagged", [])
             })
         return results
 
@@ -527,7 +529,8 @@ async def get_queue_priority(turbine_id: int):
             "risk_level": risk,
             "anomaly_score": score,
             "estimated_revenue_loss": round(loss_val, 2),
-            "status": get_status_string(turbine_id, risk)
+            "status": get_status_string(turbine_id, risk),
+            "why_flagged": latest.get("why_flagged", [])
         }
 
 
