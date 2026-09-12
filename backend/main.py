@@ -20,7 +20,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -49,6 +49,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -307,7 +308,7 @@ def root():
 # GET /assets
 # ------------------------------------------------------------------------------
 @app.get("/assets")
-async def get_assets():
+async def get_assets(response: Response):
     """
     Returns a list of all turbines with:
       - turbine_id
@@ -317,6 +318,12 @@ async def get_assets():
       - one-line plain-English status string
     """
     async with sim_manager.lock:
+        response.headers["X-Current-Step"] = str(sim_manager.current_step)
+        response.headers["X-Total-Steps"] = str(sim_manager.total_steps)
+        response.headers["X-Rows-Processed"] = str(sim_manager.current_step * len(sim_manager.all_turbines))
+        response.headers["X-Simulation-Status"] = "playing" if sim_manager.is_playing else ("paused" if sim_manager.is_paused else "idle")
+        response.headers["X-Simulation-Speed"] = str(sim_manager.speed)
+
         assets = []
         for tid in sorted(sim_manager.all_turbines):
             row = sim_manager.latest_readings.get(tid)
@@ -610,6 +617,25 @@ async def simulate_pause():
             "simulated_timestamp": curr_ts,
             "message": "Simulation paused."
         }
+
+
+@app.get("/simulate/status")
+async def simulate_status():
+    """Returns the current simulation playback status and metrics."""
+    async with sim_manager.lock:
+        curr_ts = sim_manager.timestamps[min(sim_manager.current_step, len(sim_manager.timestamps) - 1)] if sim_manager.timestamps else None
+        return {
+            "status": "playing" if sim_manager.is_playing else ("paused" if sim_manager.is_paused else "idle"),
+            "is_playing": sim_manager.is_playing,
+            "is_paused": sim_manager.is_paused,
+            "speed": sim_manager.speed,
+            "current_step": sim_manager.current_step,
+            "total_steps": sim_manager.total_steps,
+            "rows_processed": sim_manager.current_step * len(sim_manager.all_turbines),
+            "simulated_timestamp": curr_ts,
+            "progress_pct": round((sim_manager.current_step / max(1, sim_manager.total_steps)) * 100.0, 1)
+        }
+
 
 
 if __name__ == "__main__":
