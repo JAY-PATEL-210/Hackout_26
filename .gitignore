@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+.venv/
+backend/.venv/
+venv/
+backend/venv/
+__pycache__/
+*/__pycache__/
+*.pyc
+
+# Production build
+dist/
+frontend/dist/
+build/
+
+# Environment and logs
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
