@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { collection, onSnapshot, query } from 'firebase/firestore'
 import { Link } from 'react-router-dom'
 import { db } from '../firebase/config'
+import FarmGeoMap from '../components/FarmGeoMap'
+import { scadaAudio } from '../utils/audioAlarm'
 
 const API_BASE = 'http://127.0.0.1:8000'
 
@@ -143,6 +145,7 @@ export default function UserPanel() {
   const [sourceType, setSourceType] = useState('Connecting...')
   const [filterType, setFilterType] = useState('all') // 'all' | 'wind' | 'solar' | 'attention'
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'map'
 
   // REST fallback poller
   const fetchAssetsFromAPI = useCallback(async () => {
@@ -328,6 +331,13 @@ export default function UserPanel() {
     return maintenanceQueue[0] || null
   }, [maintenanceQueue])
 
+  // Trigger synthesized audio alarm if Critical asset exists
+  useEffect(() => {
+    if (metrics.criticalCount > 0) {
+      scadaAudio.playChime('critical')
+    }
+  }, [metrics.criticalCount])
+
   return (
     <div className="space-y-8 pb-12 animate-fadeIn font-manrope">
 
@@ -358,20 +368,49 @@ export default function UserPanel() {
           </p>
         </div>
 
-        {/* Live sync indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 backdrop-blur-md border border-white/90 shadow-xs text-xs">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping-slow absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
-          </span>
-          <span className="font-mono text-slate-600 font-semibold text-[11px]">
-            {sourceType}
-          </span>
-          {lastUpdate && (
-            <span className="text-slate-400 text-[11px]">
-              • {lastUpdate.toLocaleTimeString()}
+        {/* View mode switcher & Live sync indicator */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* View mode switcher (Grid vs Map) */}
+          <div className="flex items-center gap-1 p-1 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-2xs">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-space transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-sky-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+              }`}
+            >
+              <span>📊</span>
+              <span>Overview Grid</span>
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-space transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'map'
+                  ? 'bg-sky-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+              }`}
+            >
+              <span>🗺️</span>
+              <span>Farm Map</span>
+            </button>
+          </div>
+
+          {/* Live sync indicator */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 backdrop-blur-md border border-white/90 shadow-xs text-xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping-slow absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
             </span>
-          )}
+            <span className="font-mono text-slate-600 font-semibold text-[11px]">
+              {sourceType}
+            </span>
+            {lastUpdate && (
+              <span className="text-slate-400 text-[11px]">
+                • {lastUpdate.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -473,9 +512,12 @@ export default function UserPanel() {
       </div>
 
       {/* ───────────────────────────────────────────────────────────────────────
-          3. TWO-THIRDS MAINTENANCE QUEUE + ONE-THIRD LIVE SENSOR ANOMALY
+          3. CONDITIONAL VIEW: INTERACTIVE GEOSPATIAL MAP vs OPERATIONAL GRID
          ─────────────────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {viewMode === 'map' ? (
+        <FarmGeoMap assets={allAssets} onSelectAsset={(a) => setSelectedAsset(a)} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── 2/3 COLUMN: MAINTENANCE PRIORITY QUEUE ───────────────────────── */}
         <div className="lg:col-span-2 frosted-card rounded-3xl p-6 sm:p-7 shadow-sm">
@@ -706,6 +748,7 @@ export default function UserPanel() {
         </div>
 
       </div>
+      )}
 
       {/* ───────────────────────────────────────────────────────────────────────
           4. FULL-WIDTH ASSET REGISTER TABLE

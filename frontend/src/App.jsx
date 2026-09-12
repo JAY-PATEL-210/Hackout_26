@@ -11,6 +11,7 @@ import SimulatorPage    from './pages/SimulatorPage'
 import UserPanel        from './pages/UserPanel'
 import TechnicianPanel  from './pages/TechnicianPanel'
 import ManagerPanel     from './pages/ManagerPanel'
+import AiCopilotModal   from './components/AiCopilotModal'
 
 export default function App() {
   return (
@@ -109,6 +110,9 @@ export default function App() {
           <footer className="relative z-10 border-t border-slate-200/80 bg-white/60 backdrop-blur-md py-4 text-center text-xs text-slate-500 font-manrope">
             WindGuard SCADA • Frosted Industrial Control Room • Renewable Asset Monitoring
           </footer>
+
+          {/* Global AI SCADA Copilot Modal & Trigger */}
+          <AiCopilotModal />
         </div>
       </BrowserRouter>
     </AuthProvider>
