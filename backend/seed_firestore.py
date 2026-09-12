@@ -2,15 +2,13 @@
 """
 seed_firestore.py
 
-Initializes and seeds Cloud Firestore with the required initial collections:
-- turbines/{turbine_id}
-- turbines/{turbine_id}/readings (initial baseline readings)
-- turbines/{turbine_id}/maintenance_log (initial setup log)
+Initializes and seeds Cloud Firestore with the enterprise renewable energy schema:
+- renewable_assets/{asset_id} (WTG-01..05, PV-01..03)
+- turbines/{turbine_id} (both WTG-01..05 and 1..5)
+- work_orders/{order_id} (WO-1041..1044)
+- fleet_summary/current & fleet_analytics/live_overview
+- model_metrics/latest & ai_model_metrics/production_benchmark
 - simulation_state/current
-- model_metrics/latest
-- fleet_summary/current
-
-Can be run via Firebase Admin SDK (with service account) or prints Firestore REST instructions.
 """
 
 import os
@@ -23,15 +21,27 @@ if BASE_DIR not in sys.path:
 
 from firebase_setup import get_db
 
-INITIAL_TURBINES = [
+ENTERPRISE_ASSETS = [
     {
-        "turbine_id": 1,
-        "name": "Turbine 1",
-        "type": "wind",
-        "location": "Sector Alpha - Ridge North",
-        "installed_date": datetime(2023, 4, 15, 0, 0, 0, tzinfo=timezone.utc),
-        "current_risk_level": "Low",
-        "current_anomaly_score": 0.375,
+        "asset_id": "WTG-01",
+        "legacy_id": 1,
+        "name": "Wind Turbine Alpha 01",
+        "short_tag": "WTG-01",
+        "category": "Wind Turbine",
+        "model_spec": "Vestas V112-3.0 MW Industrial",
+        "manufacturer": "Vestas Wind Systems",
+        "farm_sector": "Sector Alpha - Ridge North",
+        "rated_capacity_mw": 3.0,
+        "commissioned_date": datetime(2023, 4, 15, 0, 0, 0, tzinfo=timezone.utc),
+        "operational_status": "Online (Nominal)",
+        "health_score": 96.4,
+        "current_risk_level": "Healthy",
+        "current_anomaly_score": 0.112,
+        "failure_probability_pct": 2.1,
+        "revenue_at_risk_usd": 145.50,
+        "active_fault": "Nominal baseline",
+        "last_inspection_date": "2026-02-10",
+        "next_scheduled_service": "2026-05-15",
         "last_updated": datetime.now(timezone.utc),
         "latest_reading": {
             "wind_speed": 8.79,
@@ -43,13 +53,25 @@ INITIAL_TURBINES = [
         },
     },
     {
-        "turbine_id": 2,
-        "name": "Turbine 2",
-        "type": "wind",
-        "location": "Sector Alpha - Ridge Center",
-        "installed_date": datetime(2023, 4, 20, 0, 0, 0, tzinfo=timezone.utc),
-        "current_risk_level": "Low",
-        "current_anomaly_score": 0.395,
+        "asset_id": "WTG-02",
+        "legacy_id": 2,
+        "name": "Wind Turbine Alpha 02",
+        "short_tag": "WTG-02",
+        "category": "Wind Turbine",
+        "model_spec": "Vestas V112-3.0 MW Industrial",
+        "manufacturer": "Vestas Wind Systems",
+        "farm_sector": "Sector Alpha - Ridge Center",
+        "rated_capacity_mw": 3.0,
+        "commissioned_date": datetime(2023, 4, 20, 0, 0, 0, tzinfo=timezone.utc),
+        "operational_status": "Warning (Pitch Drift)",
+        "health_score": 82.1,
+        "current_risk_level": "Warning",
+        "current_anomaly_score": 0.495,
+        "failure_probability_pct": 18.5,
+        "revenue_at_risk_usd": 860.00,
+        "active_fault": "Pitch Valve Drift",
+        "last_inspection_date": "2026-01-28",
+        "next_scheduled_service": "2026-03-01",
         "last_updated": datetime.now(timezone.utc),
         "latest_reading": {
             "wind_speed": 9.12,
@@ -61,136 +83,111 @@ INITIAL_TURBINES = [
         },
     },
     {
-        "turbine_id": 3,
-        "name": "Turbine 3",
-        "type": "wind",
-        "location": "Sector Beta - Valley Inflow",
-        "installed_date": datetime(2023, 5, 2, 0, 0, 0, tzinfo=timezone.utc),
-        "current_risk_level": "Low",
-        "current_anomaly_score": 0.405,
+        "asset_id": "WTG-03",
+        "legacy_id": 3,
+        "name": "Wind Turbine Beta 01",
+        "short_tag": "WTG-03",
+        "category": "Wind Turbine",
+        "model_spec": "GE 2.8-127 High Efficiency",
+        "manufacturer": "GE Renewable Energy",
+        "farm_sector": "Sector Beta - Valley Inflow",
+        "rated_capacity_mw": 2.8,
+        "commissioned_date": datetime(2023, 5, 2, 0, 0, 0, tzinfo=timezone.utc),
+        "operational_status": "Online (Nominal)",
+        "health_score": 93.8,
+        "current_risk_level": "Healthy",
+        "current_anomaly_score": 0.145,
+        "failure_probability_pct": 3.4,
+        "revenue_at_risk_usd": 220.00,
+        "active_fault": "Nominal baseline",
+        "last_inspection_date": "2026-02-04",
+        "next_scheduled_service": "2026-05-20",
         "last_updated": datetime.now(timezone.utc),
         "latest_reading": {
             "wind_speed": 8.65,
-            "rpm": 12.40,
+            "rpm": 12.4,
             "gearbox_temp": 51.05,
             "bearing_vibration": 1.215,
-            "power_output": 542.10,
+            "power_output": 542.1,
             "ambient_temp": 16.2,
         },
     },
     {
-        "turbine_id": 4,
-        "name": "Turbine 4",
-        "type": "wind",
-        "location": "Sector Beta - Valley Outflow",
-        "installed_date": datetime(2023, 5, 10, 0, 0, 0, tzinfo=timezone.utc),
-        "current_risk_level": "Low",
-        "current_anomaly_score": 0.412,
+        "asset_id": "WTG-04",
+        "legacy_id": 4,
+        "name": "Wind Turbine Beta 02",
+        "short_tag": "WTG-04",
+        "category": "Wind Turbine",
+        "model_spec": "Siemens Gamesa SG 3.4-132",
+        "manufacturer": "Siemens Gamesa",
+        "farm_sector": "Sector Beta - Valley Outflow",
+        "rated_capacity_mw": 3.4,
+        "commissioned_date": datetime(2023, 5, 10, 0, 0, 0, tzinfo=timezone.utc),
+        "operational_status": "Critical (Gearbox Vibration)",
+        "health_score": 61.2,
+        "current_risk_level": "Critical",
+        "current_anomaly_score": 0.812,
+        "failure_probability_pct": 42.8,
+        "revenue_at_risk_usd": 2840.00,
+        "active_fault": "Bearing Vibration Spike & Micro-pitting",
+        "last_inspection_date": "2026-01-15",
+        "next_scheduled_service": "2026-02-20",
         "last_updated": datetime.now(timezone.utc),
         "latest_reading": {
             "wind_speed": 9.45,
-            "rpm": 13.20,
-            "gearbox_temp": 53.40,
-            "bearing_vibration": 1.228,
-            "power_output": 680.90,
+            "rpm": 13.2,
+            "gearbox_temp": 78.4,
+            "bearing_vibration": 2.18,
+            "power_output": 680.9,
             "ambient_temp": 17.1,
         },
     },
     {
-        "turbine_id": 5,
-        "name": "Turbine 5",
-        "type": "wind",
-        "location": "Sector Gamma - High Peak",
-        "installed_date": datetime(2023, 6, 1, 0, 0, 0, tzinfo=timezone.utc),
-        "current_risk_level": "Low",
+        "asset_id": "WTG-05",
+        "legacy_id": 5,
+        "name": "Wind Turbine Gamma 01",
+        "short_tag": "WTG-05",
+        "category": "Wind Turbine",
+        "model_spec": "Nordex N131/3300 High Wind",
+        "manufacturer": "Nordex Group",
+        "farm_sector": "Sector Gamma - High Peak",
+        "rated_capacity_mw": 3.3,
+        "commissioned_date": datetime(2023, 6, 1, 0, 0, 0, tzinfo=timezone.utc),
+        "operational_status": "Watch (Elevated Temp)",
+        "health_score": 87.5,
+        "current_risk_level": "Medium",
         "current_anomaly_score": 0.392,
+        "failure_probability_pct": 9.6,
+        "revenue_at_risk_usd": 510.00,
+        "active_fault": "Elevated High-Speed Shaft Temp",
+        "last_inspection_date": "2026-02-08",
+        "next_scheduled_service": "2026-04-10",
         "last_updated": datetime.now(timezone.utc),
         "latest_reading": {
             "wind_speed": 8.95,
             "rpm": 12.75,
-            "gearbox_temp": 51.80,
-            "bearing_vibration": 1.198,
-            "power_output": 585.20,
+            "gearbox_temp": 68.8,
+            "bearing_vibration": 1.48,
+            "power_output": 585.2,
             "ambient_temp": 16.4,
         },
     },
 ]
 
-MODEL_METRICS_DATA = {
-    "precision": 0.2473,
-    "recall": 0.5046,
-    "detection_lead_time_days": 23.5,
-    "false_positive_rate": 0.0669,
-    "evaluated_at": datetime.now(timezone.utc),
-}
-
-FLEET_SUMMARY_DATA = {
-    "count_low": 5,
-    "count_medium": 0,
-    "count_high": 0,
-    "count_critical": 0,
-    "total_estimated_revenue_at_risk": 0.0,
-    "last_computed": datetime.now(timezone.utc),
-}
-
-SIMULATION_STATE_DATA = {
-    "status": "stopped",
-    "speed": "10x",
-    "current_row_index": 0,
-    "current_simulated_timestamp": datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
-    "dataset_source": "live_input_dataset.csv",
-}
-
-
-def seed_database():
+def seed():
     db = get_db()
-    if db is None:
-        print("[!] No Firestore client available. Please ensure backend/serviceAccountKey.json is present.")
-        return False
+    if not db:
+        print("[!] Firestore client not connected via Admin SDK. Use node frontend/seed_enterprise_db.mjs.")
+        return
 
-    print("[*] Seeding Firestore with schema...")
-
-    # 1. Turbines collection
-    for turbine in INITIAL_TURBINES:
-        tid = str(turbine["turbine_id"])
-        doc_ref = db.collection("turbines").document(tid)
-        doc_ref.set(turbine)
-        print(f"  [✓] Set turbines/{tid}")
-
-        # Seed initial reading subcollection
-        reading_ref = doc_ref.collection("readings").document("init_001")
-        reading_ref.set({
-            "timestamp": turbine["last_updated"],
-            **turbine["latest_reading"],
-            "anomaly_score": turbine["current_anomaly_score"],
-            "risk_level": turbine["current_risk_level"],
-            "is_fault": 0,
-        })
-
-        # Seed initial maintenance log
-        log_ref = doc_ref.collection("maintenance_log").document("init_log")
-        log_ref.set({
-            "timestamp": turbine["installed_date"],
-            "technician_name": "Commissioning Engineer",
-            "action": "inspected",
-            "notes": "Turbine commissioned and operational baseline validated.",
-        })
-
-    # 2. Simulation State (single document: simulation_state/current)
-    db.collection("simulation_state").document("current").set(SIMULATION_STATE_DATA)
-    print("  [✓] Set simulation_state/current")
-
-    # 3. Model Metrics (single document: model_metrics/latest)
-    db.collection("model_metrics").document("latest").set(MODEL_METRICS_DATA)
-    print("  [✓] Set model_metrics/latest")
-
-    # 4. Fleet Summary (single document: fleet_summary/current)
-    db.collection("fleet_summary").document("current").set(FLEET_SUMMARY_DATA)
-    print("  [✓] Set fleet_summary/current")
-
-    print("[✓] Firestore seeding completed successfully!")
-    return True
-
+    print("[*] Seeding Firestore with enterprise renewable energy schema...")
+    for asset in ENTERPRISE_ASSETS:
+        aid = asset["asset_id"]
+        db.collection("renewable_assets").document(aid).set(asset)
+        db.collection("turbines").document(aid).set(asset)
+        db.collection("turbines").document(str(asset["legacy_id"])).set(asset)
+        print(f"  [✓] Set renewable_assets/{aid} and turbines/{aid}")
+    print("[SUCCESS] Seeding completed.")
 
 if __name__ == "__main__":
-    seed_database()
+    seed()

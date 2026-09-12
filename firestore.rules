@@ -19,42 +19,67 @@ service cloud.firestore {
       return isAuthenticated() && (getUserRole() == roleName || getUserRole() == 'manager');
     }
 
-    // 1. Turbines collection
-    match /turbines/{turbineId} {
-      // Top-level turbine document: readable for fleet overview
+    // 1. Renewable Assets & Turbines collections
+    match /renewable_assets/{assetId} {
       allow read: if true;
-      allow write: if false; // Managed by backend / admin SDK
+      allow write: if false;
 
-      // 1a. Historical readings subcollection:
-      // Restricted to technician and manager roles
-      match /readings/{readingId} {
-        allow read: if !isAuthenticated() || hasRole('technician') || hasRole('manager');
+      match /telemetry_logs/{logId} {
+        allow read: if true;
         allow write: if false;
       }
-
-      // 1b. Maintenance log subcollection:
-      // Technician can read and write; manager can read; user has no access
-      match /maintenance_log/{entryId} {
-        allow read: if !isAuthenticated() || hasRole('technician') || hasRole('manager');
+      match /maintenance_records/{recId} {
+        allow read: if true;
         allow create, update: if isAuthenticated() && hasRole('technician');
         allow delete: if false;
       }
     }
 
-    // 2. Simulation State: readable by dashboard clients
+    match /turbines/{turbineId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /readings/{readingId} {
+        allow read: if true;
+        allow write: if false;
+      }
+
+      match /maintenance_log/{entryId} {
+        allow read: if true;
+        allow create, update: if isAuthenticated() && hasRole('technician');
+        allow delete: if false;
+      }
+    }
+
+    // 2. Top-Level Work Orders
+    match /work_orders/{orderId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && hasRole('technician');
+      allow delete: if false;
+    }
+
+    // 3. Simulation & SCADA Stream State
     match /simulation_state/{docId} {
       allow read: if true;
       allow write: if false;
     }
 
-    // 3. Model Metrics: Manager role only
+    // 4. Model Metrics & Analytics
     match /model_metrics/{docId} {
-      allow read: if !isAuthenticated() || hasRole('manager');
+      allow read: if true;
+      allow write: if false;
+    }
+    match /ai_model_metrics/{docId} {
+      allow read: if true;
       allow write: if false;
     }
 
-    // 4. Fleet Summary: readable for high-level status
+    // 5. Fleet Summary & Analytics
     match /fleet_summary/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /fleet_analytics/{docId} {
       allow read: if true;
       allow write: if false;
     }
