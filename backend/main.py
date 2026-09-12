@@ -770,6 +770,39 @@ async def simulate_status():
 
 
 
+# ------------------------------------------------------------------------------
+# AUTH: User registration — sets custom claim role="user" via Admin SDK
+# ------------------------------------------------------------------------------
+class RegisterUserRequest(BaseModel):
+    uid: str
+
+@app.post("/auth/register-user")
+async def register_user(payload: RegisterUserRequest):
+    """
+    Called by the frontend after createUserWithEmailAndPassword.
+    Sets custom claim {"role": "user"} for the new UID using Firebase Admin SDK.
+    Requires a valid serviceAccountKey.json to be present.
+    If the Admin SDK is unavailable (no service account), returns 200 with a
+    warning so the frontend can continue using the email-based fallback.
+    """
+    uid = payload.uid.strip()
+    if not uid:
+        raise HTTPException(status_code=400, detail="uid is required.")
+    try:
+        from firebase_setup import get_auth as get_admin_auth
+        admin_auth = get_admin_auth()
+        admin_auth.set_custom_user_claims(uid, {"role": "user"})
+        return {"success": True, "uid": uid, "role": "user"}
+    except Exception as e:
+        # Service account not configured — frontend email-fallback handles role
+        return {
+            "success": False,
+            "warning": "Admin SDK not available; role will be derived from email.",
+            "detail": str(e)
+        }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
