@@ -16,9 +16,13 @@ build/
 
 # Environment and logs
 .env
-.env.local
+.env.*
+backend/.env
+frontend/.env
 *.log
 npm-debug.log*
+*serviceAccount*.json
+*firebase-adminsdk*.json
 
 # IDE & OS
 .vscode/

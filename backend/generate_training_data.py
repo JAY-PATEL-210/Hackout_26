@@ -264,5 +264,45 @@ def print_summary_statistics(df, fault_turbine_id, fault_start_step):
     print("=" * 88 + "\n")
 
 
+def upload_dataset_to_firestore(df: pd.DataFrame, dataset_name: str = "training"):
+    """Writes dataset records to Firestore under turbines/{turbine_id}/readings."""
+    try:
+        from firebase_setup import get_db
+        db = get_db()
+        if db is None:
+            print("[!] Cannot write to Firestore: Firebase Admin credentials not available.")
+            return
+
+        print(f"[*] Writing {len(df):,} records to Firestore subcollections...")
+        for turbine_id, group in df.groupby("turbine_id"):
+            tid = str(int(turbine_id))
+            turbine_ref = db.collection("turbines").document(tid)
+            records = group.to_dict(orient="records")
+            for i in range(0, len(records), 400):
+                batch = db.batch()
+                chunk = records[i:i + 400]
+                for r in chunk:
+                    rid = f"{dataset_name}_{str(r['timestamp']).replace(' ', '_').replace(':', '-')}"
+                    doc_ref = turbine_ref.collection("readings").document(rid)
+                    batch.set(doc_ref, {
+                        "timestamp": str(r["timestamp"]),
+                        "wind_speed": float(r["wind_speed"]),
+                        "rpm": float(r["rpm"]),
+                        "gearbox_temp": float(r["gearbox_temp"]),
+                        "bearing_vibration": float(r["bearing_vibration"]),
+                        "power_output": float(r["power_output"]),
+                        "ambient_temp": float(r["ambient_temp"]),
+                        "is_fault": int(r.get("is_fault", 0)),
+                    })
+                batch.commit()
+                print(f"  [✓] Turbine {tid}: committed batch {i // 400 + 1}")
+        print("[✓] Finished writing dataset to Firestore!")
+    except Exception as e:
+        print(f"[!] Error writing to Firestore: {e}")
+
+
 if __name__ == "__main__":
-    generate_scada_data()
+    import sys
+    df = generate_scada_data()
+    if "--to-firestore" in sys.argv:
+        upload_dataset_to_firestore(df, "training")

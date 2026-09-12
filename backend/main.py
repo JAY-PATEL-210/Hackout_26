@@ -31,6 +31,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from score import score_dataframe
+from firebase_setup import get_db
 
 app = FastAPI(
     title="Predictive Maintenance Platform API",
@@ -286,10 +287,108 @@ class SimulationManager:
                         tid = int(row["turbine_id"])
                         self.latest_readings[tid] = row
                         self.history_by_turbine[tid].append(row)
+
+                    # Synchronize step to persistent Firestore collections
+                    try:
+                        sync_step_to_firestore(rows, self.current_step, self.speed, self.is_playing)
+                    except Exception as fe:
+                        pass
+
                     self.current_step += 1
 
         except asyncio.CancelledError:
             pass
+
+
+def sync_step_to_firestore(rows: List[Dict[str, Any]], current_step: int, speed: str, is_playing: bool):
+    """
+    Synchronizes simulation state and sensor readings to Cloud Firestore:
+    - Writes new readings to turbines/{turbine_id}/readings/{reading_id}
+    - Updates turbines/{turbine_id} top-level document
+    - Updates simulation_state/current
+    - Recomputes and updates fleet_summary/current
+    """
+    db = get_db()
+    if db is None or not rows:
+        return
+
+    try:
+        batch = db.batch()
+        sim_timestamp = rows[0].get("timestamp")
+
+        risk_counts = {"Low": 0, "Medium": 0, "High": 0, "Critical": 0}
+        total_loss = 0.0
+        price_per_kwh = 0.12
+        interval_hours = 10.0 / 60.0
+
+        for row in rows:
+            tid = str(int(row["turbine_id"]))
+            risk = row.get("risk_level", "Low")
+            score = float(row.get("anomaly_score", 0.0))
+            risk_counts[risk] = risk_counts.get(risk, 0) + 1
+
+            exp_power = get_expected_power(float(row.get("wind_speed", 0.0)))
+            act_power = float(row.get("power_output", 0.0))
+            loss = max(0.0, exp_power - act_power) * interval_hours * price_per_kwh
+            total_loss += loss
+
+            reading_dict = {
+                "wind_speed": float(row.get("wind_speed", 0.0)),
+                "rpm": float(row.get("rpm", 0.0)),
+                "gearbox_temp": float(row.get("gearbox_temp", 0.0)),
+                "bearing_vibration": float(row.get("bearing_vibration", 0.0)),
+                "power_output": float(row.get("power_output", 0.0)),
+                "ambient_temp": float(row.get("ambient_temp", 0.0)),
+            }
+
+            # 1. Update turbines/{tid}
+            turbine_ref = db.collection("turbines").document(tid)
+            batch.set(turbine_ref, {
+                "name": f"Turbine {tid}",
+                "type": "wind",
+                "current_risk_level": risk,
+                "current_anomaly_score": score,
+                "last_updated": sim_timestamp,
+                "latest_reading": reading_dict,
+                "status": get_status_string(int(tid), risk),
+            }, merge=True)
+
+            # 2. Write to turbines/{tid}/readings subcollection
+            reading_id = f"step_{current_step:05d}"
+            reading_ref = turbine_ref.collection("readings").document(reading_id)
+            batch.set(reading_ref, {
+                "timestamp": sim_timestamp,
+                **reading_dict,
+                "anomaly_score": score,
+                "risk_level": risk,
+                "is_fault": int(row.get("is_fault", 0)),
+                "why_flagged": row.get("why_flagged", []),
+            })
+
+        # 3. Update simulation_state/current
+        sim_ref = db.collection("simulation_state").document("current")
+        batch.set(sim_ref, {
+            "status": "running" if is_playing else "paused",
+            "speed": speed,
+            "current_row_index": current_step,
+            "current_simulated_timestamp": sim_timestamp,
+            "dataset_source": "live_input_dataset.csv",
+        }, merge=True)
+
+        # 4. Update fleet_summary/current
+        fleet_ref = db.collection("fleet_summary").document("current")
+        batch.set(fleet_ref, {
+            "count_low": risk_counts["Low"],
+            "count_medium": risk_counts["Medium"],
+            "count_high": risk_counts["High"],
+            "count_critical": risk_counts["Critical"],
+            "total_estimated_revenue_at_risk": round(total_loss, 2),
+            "last_updated": sim_timestamp,
+        }, merge=True)
+
+        batch.commit()
+    except Exception as e:
+        print(f"[sync_step_to_firestore] Error writing to Firestore: {e}", flush=True)
 
 
 sim_manager = SimulationManager()

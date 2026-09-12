@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { doc, collection, onSnapshot } from 'firebase/firestore'
+import { db } from '../firebase/config'
 
 const API_BASE = 'http://127.0.0.1:8000'
 const TOTAL_DATASET_ROWS = 21600 // 4,320 timestamps * 5 turbines
@@ -95,13 +97,63 @@ export default function SimulatorPage() {
     }
   }
 
-  // Poll GET /assets every 2 seconds
+  // Real-time Firestore onSnapshot listeners for simulation_state and turbines
   useEffect(() => {
-    fetchTelemetry() // initial fetch
+    fetchTelemetry()
+
+    // 1. Listen to simulation_state/current in real time
+    const unsubSim = onSnapshot(doc(db, 'simulation_state', 'current'), (docSnap) => {
+      if (docSnap.exists()) {
+        const d = docSnap.data()
+        if (d.status) {
+          setSimStatus(d.status === 'running' ? 'playing' : d.status)
+          if (d.status === 'running' || d.status === 'paused') setHasStarted(true)
+        }
+        if (d.speed) setSpeed(d.speed)
+        if (d.current_row_index !== undefined) {
+          setCurrentStep(d.current_row_index)
+          setRowsProcessed(d.current_row_index * 5)
+        }
+        if (d.current_simulated_timestamp) {
+          setSimulatedTimestamp(
+            d.current_simulated_timestamp?.toDate
+              ? d.current_simulated_timestamp.toDate().toLocaleString()
+              : String(d.current_simulated_timestamp)
+          )
+        }
+      }
+    }, (err) => console.warn('[SimulatorPage] simulation_state listener fallback:', err))
+
+    // 2. Listen to turbines in real time
+    const unsubTurbines = onSnapshot(collection(db, 'turbines'), (snapshot) => {
+      if (!snapshot.empty) {
+        const turbineList = snapshot.docs.map((d) => {
+          const data = d.data()
+          return {
+            turbine_id: data.turbine_id || parseInt(d.id, 10),
+            risk_level: data.current_risk_level || 'Low',
+            status: data.status || 'Running normally',
+            last_updated: data.last_updated?.toDate ? data.last_updated.toDate().toLocaleString() : data.last_updated,
+            anomaly_score: data.current_anomaly_score || 0,
+            sensor_readings: data.latest_reading || {},
+          }
+        })
+        turbineList.sort((a, b) => a.turbine_id - b.turbine_id)
+        setAssets(turbineList)
+        setApiOnline(true)
+      }
+    }, (err) => console.warn('[SimulatorPage] turbines listener fallback:', err))
+
+    // Fallback interval
     const timer = setInterval(() => {
       fetchTelemetry()
-    }, 2000)
-    return () => clearInterval(timer)
+    }, 4000)
+
+    return () => {
+      unsubSim()
+      unsubTurbines()
+      clearInterval(timer)
+    }
   }, [])
 
   // Action: Run Simulation (POST /simulate/reset then GET /simulate/replay?speed=10x)

@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Auth helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return request.auth.token.role != null 
+        ? request.auth.token.role 
+        : (request.auth.token.email.matches('.*manager.*') ? 'manager'
+          : (request.auth.token.email.matches('.*tech.*') ? 'technician' : 'user'));
+    }
+    
+    function hasRole(roleName) {
+      return isAuthenticated() && (getUserRole() == roleName || getUserRole() == 'manager');
+    }
+
+    // 1. Turbines collection
+    match /turbines/{turbineId} {
+      // Top-level turbine document: readable for fleet overview
+      allow read: if true;
+      allow write: if false; // Managed by backend / admin SDK
+
+      // 1a. Historical readings subcollection:
+      // Restricted to technician and manager roles
+      match /readings/{readingId} {
+        allow read: if !isAuthenticated() || hasRole('technician') || hasRole('manager');
+        allow write: if false;
+      }
+
+      // 1b. Maintenance log subcollection:
+      // Technician can read and write; manager can read; user has no access
+      match /maintenance_log/{entryId} {
+        allow read: if !isAuthenticated() || hasRole('technician') || hasRole('manager');
+        allow create, update: if isAuthenticated() && hasRole('technician');
+        allow delete: if false;
+      }
+    }
+
+    // 2. Simulation State: readable by dashboard clients
+    match /simulation_state/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 3. Model Metrics: Manager role only
+    match /model_metrics/{docId} {
+      allow read: if !isAuthenticated() || hasRole('manager');
+      allow write: if false;
+    }
+
+    // 4. Fleet Summary: readable for high-level status
+    match /fleet_summary/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

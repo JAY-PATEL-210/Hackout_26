@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { collection, onSnapshot, query } from 'firebase/firestore'
+import { db } from '../firebase/config'
 
 const API_BASE = 'http://127.0.0.1:8000'
 
@@ -316,6 +318,7 @@ export default function UserPanel() {
   const [apiOnline, setApiOnline] = useState(true)
   const [lastPoll, setLastPoll] = useState(null)
   const [selectedAsset, setSelectedAsset] = useState(null)
+  const [sourceType, setSourceType] = useState('Firestore Real-Time')
 
   const fetchAssets = useCallback(async () => {
     try {
@@ -326,18 +329,52 @@ export default function UserPanel() {
       setApiOnline(true)
       setLastPoll(new Date())
     } catch (err) {
-      console.error('Failed to poll /assets:', err)
+      console.error('Failed to poll /assets fallback:', err)
       setApiOnline(false)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Poll every 2 seconds
+  // Real-time Firestore onSnapshot listener on 'turbines' collection (No polling needed)
   useEffect(() => {
-    fetchAssets()
-    const timer = setInterval(fetchAssets, 2000)
-    return () => clearInterval(timer)
+    const q = query(collection(db, 'turbines'))
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const turbineList = snapshot.docs.map((doc) => {
+            const data = doc.data()
+            return {
+              turbine_id: data.turbine_id || parseInt(doc.id, 10),
+              name: data.name || `Turbine ${doc.id}`,
+              risk_level: data.current_risk_level || 'Low',
+              status: data.status || (data.current_risk_level === 'Critical' ? `Turbine ${doc.id} critical fault detected` : data.current_risk_level === 'High' ? `Turbine ${doc.id} needs attention` : 'Running normally'),
+              last_updated: data.last_updated?.toDate ? data.last_updated.toDate().toLocaleString() : (data.last_updated || '—'),
+              anomaly_score: data.current_anomaly_score || 0,
+              sensor_readings: data.latest_reading || {},
+              type: data.type || 'wind',
+              location: data.location || '',
+            }
+          })
+          turbineList.sort((a, b) => a.turbine_id - b.turbine_id)
+          setAssets(turbineList)
+          setApiOnline(true)
+          setSourceType('Firestore onSnapshot')
+          setLastPoll(new Date())
+          setLoading(false)
+        } else {
+          // If Firestore is empty yet, fallback to REST API
+          fetchAssets()
+        }
+      },
+      (error) => {
+        console.warn('[UserPanel] Firestore listener error, fallback to REST:', error)
+        fetchAssets()
+      }
+    )
+
+    return () => unsubscribe()
   }, [fetchAssets])
 
   // Keep detail panel updated with latest data if open
@@ -380,12 +417,12 @@ export default function UserPanel() {
                 </span>
               </div>
               <p className="text-sm text-slate-400 mt-1">
-                Operator dashboard — live fleet health at a glance.
+                Operator dashboard — live fleet health at a glance via Firestore real-time.
               </p>
             </div>
           </div>
 
-          {/* API status + poll indicator */}
+          {/* Firestore Real-Time Indicator */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/60 border border-slate-800 text-xs">
               <span className="relative flex h-2 w-2">
@@ -399,7 +436,7 @@ export default function UserPanel() {
                 />
               </span>
               <span className="text-slate-400 font-mono text-[11px]">
-                {apiOnline ? 'Live' : 'Offline'} • 2s poll
+                {sourceType}
               </span>
             </div>
           </div>
