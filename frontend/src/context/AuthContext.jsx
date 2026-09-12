@@ -19,8 +19,8 @@ function deriveRole(user, claims) {
 
   // 2. Email-based fallback for provisioned accounts
   const email = user?.email?.toLowerCase() || ''
-  if (email === 'tech123@gmail.com' || email.includes('technician') || email.includes('tech')) return 'technician'
-  if (email === 'man123@gmail.com'  || email.includes('manager')) return 'manager'
+  if (email === 'technician@windguard.io' || email.includes('technician')) return 'technician'
+  if (email === 'manager@windguard.io'    || email.includes('manager'))    return 'manager'
 
   // 3. Everything else is a regular user
   return 'user'
