@@ -367,16 +367,14 @@ export default function UserPanel() {
                   Fleet Overview
                 </h1>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                    hasAlerts
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${hasAlerts
                       ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30 animate-pulse'
                       : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                  }`}
+                    }`}
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      hasAlerts ? 'bg-rose-400' : 'bg-emerald-400'
-                    }`}
+                    className={`w-1.5 h-1.5 rounded-full ${hasAlerts ? 'bg-rose-400' : 'bg-emerald-400'
+                      }`}
                   />
                   {hasAlerts ? 'Alerts Active' : 'All Normal'}
                 </span>
@@ -392,14 +390,12 @@ export default function UserPanel() {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/60 border border-slate-800 text-xs">
               <span className="relative flex h-2 w-2">
                 <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    apiOnline ? 'bg-emerald-400' : 'bg-rose-400'
-                  }`}
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${apiOnline ? 'bg-emerald-400' : 'bg-rose-400'
+                    }`}
                 />
                 <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    apiOnline ? 'bg-emerald-500' : 'bg-rose-500'
-                  }`}
+                  className={`relative inline-flex rounded-full h-2 w-2 ${apiOnline ? 'bg-emerald-500' : 'bg-rose-500'
+                    }`}
                 />
               </span>
               <span className="text-slate-400 font-mono text-[11px]">
