@@ -9,10 +9,9 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/')  // Always return to landing page on sign-out
+    navigate('/')
   }
 
-  // Role → nav destination after login
   const roleDashboard = {
     user: '/user',
     technician: '/technician',
@@ -20,94 +19,98 @@ export default function Navbar() {
   }
 
   const isOnLanding = location.pathname === '/'
-  const isOnSimulator = location.pathname === '/simulator'
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 shadow-lg">
+    <header className="sticky top-0 z-50 frosted-nav">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-          {/* Brand */}
+          {/* Brand Logo & Name */}
           <NavLink to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-sky-500 to-blue-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-shadow">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 via-sky-600 to-emerald-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform duration-200">
               ⚡
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-base tracking-tight">WindGuard</span>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                <span className="font-space font-bold text-[#0f172a] text-base tracking-tight">
+                  WindGuard
+                </span>
+                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/80 font-mono tracking-wider">
                   SCADA
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">Predictive Maintenance</p>
+              <p className="text-[11px] text-slate-500 font-manrope">
+                Renewable Energy Control Room
+              </p>
             </div>
           </NavLink>
 
-          {/* Nav links — only show dashboard link when logged in */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1.5">
             <NavLink
               to="/simulator"
               className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border ${
+                `px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border font-manrope ${
                   isActive
-                    ? 'bg-slate-700/40 text-slate-200 border-slate-600'
-                    : 'text-slate-500 hover:text-slate-300 border-transparent hover:border-slate-800'
+                    ? 'bg-sky-50 text-sky-700 border-sky-200/80 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-100/60'
                 }`
               }
             >
-              🖥️ Simulator
+              <span>🖥️</span>
+              <span>SCADA Simulator</span>
             </NavLink>
 
             {user && role && roleDashboard[role] && (
               <NavLink
                 to={roleDashboard[role]}
                 className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border ${
+                  `px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border font-manrope ${
                     isActive
-                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 shadow-sm shadow-cyan-500/10'
-                      : 'text-slate-400 hover:text-slate-200 border-transparent hover:bg-slate-900/60'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-100/60'
                   }`
                 }
               >
-                {role === 'user' && '👤'}
-                {role === 'technician' && '🔧'}
-                {role === 'manager' && '📊'}
-                {' '}{role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
+                <span>{role === 'user' ? '👤' : role === 'technician' ? '🔧' : '📊'}</span>
+                <span>{role.charAt(0).toUpperCase() + role.slice(1)} Dashboard</span>
               </NavLink>
             )}
           </nav>
 
-          {/* Auth section */}
+          {/* Authentication Status & Actions */}
           <div className="flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-2.5">
                 <div className="hidden sm:flex flex-col text-right">
-                  <span className="text-xs font-mono font-bold text-white truncate max-w-[150px]">
+                  <span className="text-xs font-space font-bold text-[#0f172a] truncate max-w-[160px]">
                     {user.displayName || user.email}
                   </span>
-                  <span className={`text-[10px] font-mono uppercase font-bold self-end px-1.5 rounded border ${
-                    role === 'manager'
-                      ? 'text-violet-400 bg-violet-950/60 border-violet-800'
-                      : role === 'technician'
-                      ? 'text-amber-400 bg-amber-950/60 border-amber-800'
-                      : 'text-emerald-400 bg-emerald-950/60 border-emerald-800'
-                  }`}>
-                    {role || 'user'}
+                  <span
+                    className={`text-[10px] font-mono uppercase font-bold self-end px-2 py-0.5 rounded-full border ${
+                      role === 'manager'
+                        ? 'text-violet-700 bg-violet-50 border-violet-200'
+                        : role === 'technician'
+                        ? 'text-amber-700 bg-amber-50 border-amber-200'
+                        : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    }`}
+                  >
+                    {role || 'operator'}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-800/60 transition cursor-pointer"
-                  title="Log out"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200/80 hover:border-rose-200 transition cursor-pointer"
+                  title="Sign out of current session"
                 >
-                  Log Out
+                  Sign Out
                 </button>
               </div>
             ) : (
               !isOnLanding && (
                 <NavLink
                   to="/"
-                  className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/30 transition shadow-sm"
+                  className="px-4 py-1.5 text-xs font-space font-bold rounded-xl bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition cursor-pointer"
                 >
                   Select Role
                 </NavLink>

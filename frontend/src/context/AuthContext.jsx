@@ -19,17 +19,31 @@ function deriveRole(user, claims) {
 
   // 2. Email-based fallback for provisioned accounts
   const email = user?.email?.toLowerCase() || ''
-  if (email === 'technician@windguard.io' || email.includes('technician')) return 'technician'
-  if (email === 'manager@windguard.io'    || email.includes('manager'))    return 'manager'
+  if (email === 'technician@windguard.io' || email.includes('technician') || email === 'tech123@gmail.com') return 'technician'
+  if (email === 'manager@windguard.io'    || email.includes('manager')    || email === 'man123@gmail.com')    return 'manager'
 
   // 3. Everything else is a regular user
   return 'user'
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null)
-  const [role, setRole]       = useState(null)
-  const [loading, setLoading] = useState(true)
+  // Initialize from localStorage if available (for demo fallback or quick reload)
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('windguard_user_session')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+  const [role, setRole] = useState(() => {
+    try {
+      return localStorage.getItem('windguard_user_role') || null
+    } catch {
+      return null
+    }
+  })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -37,30 +51,53 @@ export function AuthProvider({ children }) {
         setUser(currentUser)
         try {
           const tokenResult = await currentUser.getIdTokenResult(true)
-          setRole(deriveRole(currentUser, tokenResult.claims))
+          const detected = deriveRole(currentUser, tokenResult.claims)
+          setRole(detected)
+          localStorage.setItem('windguard_user_role', detected)
         } catch {
-          setRole(deriveRole(currentUser, {}))
+          const detected = deriveRole(currentUser, {})
+          setRole(detected)
+          localStorage.setItem('windguard_user_role', detected)
         }
-      } else {
-        setUser(null)
-        setRole(null)
+        try {
+          localStorage.setItem(
+            'windguard_user_session',
+            JSON.stringify({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+            })
+          )
+        } catch (_) {}
       }
-      setLoading(false)
     })
     return () => unsubscribe()
   }, [])
+
+  const setLocalSession = (userObj, roleStr) => {
+    setUser(userObj)
+    setRole(roleStr)
+    try {
+      localStorage.setItem('windguard_user_session', JSON.stringify(userObj))
+      localStorage.setItem('windguard_user_role', roleStr)
+    } catch (_) {}
+  }
 
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password)
 
   const logout = async () => {
-    await signOut(auth)
+    try { await signOut(auth) } catch (_) {}
     setUser(null)
     setRole(null)
+    try {
+      localStorage.removeItem('windguard_user_session')
+      localStorage.removeItem('windguard_user_role')
+    } catch (_) {}
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, role, loading, login, logout, setLocalSession }}>
       {children}
     </AuthContext.Provider>
   )

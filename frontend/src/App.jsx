@@ -16,10 +16,17 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+        <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-[#f0f9ff]/50 to-[#ecfdf5]/40 text-[#0f172a] flex flex-col font-manrope selection:bg-sky-500/20 selection:text-sky-900 relative overflow-x-hidden">
+          {/* Ambient blurred daylight color blooms */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            <div className="absolute top-[-10%] left-[10%] w-[650px] h-[550px] rounded-full ambient-glow-sky blur-3xl opacity-75" />
+            <div className="absolute top-[35%] right-[-5%] w-[600px] h-[500px] rounded-full ambient-glow-mint blur-3xl opacity-65" />
+            <div className="absolute bottom-[5%] left-[15%] w-[500px] h-[450px] rounded-full ambient-glow-amber blur-3xl opacity-45" />
+          </div>
+
           <Navbar />
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+          <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
             <ErrorBoundary title="Platform Error">
               <Routes>
 
@@ -99,8 +106,8 @@ export default function App() {
             </ErrorBoundary>
           </main>
 
-          <footer className="border-t border-slate-900/80 bg-slate-950/60 py-4 text-center text-xs text-slate-500">
-            WindGuard SCADA • Predictive Maintenance Platform • HackOut '26
+          <footer className="relative z-10 border-t border-slate-200/80 bg-white/60 backdrop-blur-md py-4 text-center text-xs text-slate-500 font-manrope">
+            WindGuard SCADA • Frosted Industrial Control Room • Renewable Asset Monitoring
           </footer>
         </div>
       </BrowserRouter>

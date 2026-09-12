@@ -21,14 +21,14 @@ export default function ProtectedRoute({ children, requiredRole }) {
     )
   }
 
-  // Not logged in → send to landing
+  // Not logged in → send to role-specific login if requiredRole, otherwise landing
   if (!user) {
-    return <Navigate to="/" replace />
+    return <Navigate to={requiredRole ? `/login/${requiredRole}` : "/"} replace />
   }
 
-  // Logged in but wrong role → send to landing
+  // Logged in but wrong role → send to the specific role login page
   if (requiredRole && role !== requiredRole) {
-    return <Navigate to="/" replace />
+    return <Navigate to={`/login/${requiredRole}`} replace />
   }
 
   return children
