@@ -1,0 +1,8 @@
+[
+  "bearing_vibration_roll_mean_z",
+  "bearing_vibration_roc_z",
+  "gearbox_temp_roll_mean_z",
+  "gearbox_temp_roc_z",
+  "power_output_roll_mean_z",
+  "power_output_roc_z"
+]
