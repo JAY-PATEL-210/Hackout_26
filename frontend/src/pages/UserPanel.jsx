@@ -415,6 +415,47 @@ export default function UserPanel() {
       </div>
 
       {/* ───────────────────────────────────────────────────────────────────────
+          ACOUSTIC ALARM BANNER (When Critical Risk Detected)
+         ─────────────────────────────────────────────────────────────────────── */}
+      {metrics.criticalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-rose-50 via-rose-100/60 to-amber-50 border border-rose-300 shadow-sm font-manrope">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center text-xl shadow-md shadow-rose-600/30 animate-bounce">
+              🚨
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black font-space text-rose-900 tracking-tight uppercase">
+                  Critical SCADA Acoustic Alarm Active
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-200 text-rose-800">
+                  {metrics.criticalCount} CRITICAL ASSET{metrics.criticalCount > 1 ? 'S' : ''}
+                </span>
+              </div>
+              <p className="text-xs text-rose-700 mt-0.5">
+                Harmonic two-tone chime (880Hz / 659Hz) engaged for high-urgency mechanical degradation.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+            <button
+              onClick={() => scadaAudio.testAlarm('critical')}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-space font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+            >
+              <span>🔊</span>
+              <span>Sound Siren</span>
+            </button>
+            <button
+              onClick={() => scadaAudio.toggleMute()}
+              className="px-3 py-1.5 rounded-xl text-xs font-space font-bold bg-white/90 hover:bg-white text-slate-700 border border-slate-300 transition cursor-pointer active:scale-95"
+            >
+              Silence Sound
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────────────────
           2. FOUR KPI TILES IN A ROW (Space Grotesk KPI Numbers)
          ─────────────────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">

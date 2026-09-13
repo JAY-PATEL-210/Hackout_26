@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { scadaAudio } from '../utils/audioAlarm'
+import AudioAlarmController from './AudioAlarmController'
 
 export default function Navbar() {
   const { user, role, logout } = useAuth()
@@ -12,13 +12,6 @@ export default function Navbar() {
     await logout()
     navigate('/')
   }
-
-  const [isMuted, setIsMuted] = useState(scadaAudio.isMuted)
-
-  useEffect(() => {
-    const unsub = scadaAudio.subscribe((muted) => setIsMuted(muted))
-    return unsub
-  }, [])
 
   const roleDashboard = {
     user: '/user',
@@ -88,21 +81,8 @@ export default function Navbar() {
 
           {/* Authentication Status & Actions */}
           <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Control-Room Audio Chime Alarm Mute/Unmute */}
-            <button
-              onClick={() => scadaAudio.toggleMute()}
-              className={`p-2 rounded-xl text-xs transition border flex items-center gap-1.5 cursor-pointer font-manrope ${
-                isMuted
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-400 border-slate-200'
-                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 shadow-2xs'
-              }`}
-              title={isMuted ? 'SCADA Alarm Chime: Muted (Click to Unmute)' : 'SCADA Alarm Chime: Active (Click to Mute)'}
-            >
-              <span className="text-sm">{isMuted ? '🔇' : '🔔'}</span>
-              <span className="hidden lg:inline text-[11px] font-bold font-space">
-                {isMuted ? 'Muted' : 'Alarm Active'}
-              </span>
-            </button>
+            {/* Control-Room Audio SCADA Alarm Center */}
+            <AudioAlarmController />
             {user ? (
               <div className="flex items-center gap-2.5">
                 <div className="hidden sm:flex flex-col text-right">

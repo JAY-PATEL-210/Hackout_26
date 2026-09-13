@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase/config'
+import { scadaAudio } from '../utils/audioAlarm'
 
 const API_BASE = 'http://127.0.0.1:8000'
 const TOTAL_DATASET_ROWS = 21600 // 4,320 timestamps * 5 turbines
@@ -232,6 +233,16 @@ export default function SimulatorPage() {
   const highOrCriticalTurbines = assets.filter(
     (a) => a.risk_level === 'High' || a.risk_level === 'Critical'
   )
+
+  // Acoustic alarm pulse on new critical detections during simulation replay
+  const prevAlertCountRef = useRef(0)
+  useEffect(() => {
+    const currentAlertCount = highOrCriticalTurbines.length
+    if (simStatus === 'playing' && currentAlertCount > 0 && currentAlertCount > prevAlertCountRef.current) {
+      scadaAudio.playChime('critical')
+    }
+    prevAlertCountRef.current = currentAlertCount
+  }, [highOrCriticalTurbines.length, simStatus])
 
   const progressPercent = Math.min(
     100,
@@ -552,17 +563,27 @@ export default function SimulatorPage() {
               <span className="text-xs font-bold text-slate-600 font-manrope">
                 SCADA Active Alarms
               </span>
-              {highOrCriticalTurbines.length > 0 ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500 text-white shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                  Alert Active
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Nominal Fleet
-                </span>
-              )}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => scadaAudio.testAlarm('critical')}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-space font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition cursor-pointer flex items-center gap-1 active:scale-95"
+                  title="Audition acoustic alert chime"
+                >
+                  <span>🔊</span>
+                  <span>Test Alarm</span>
+                </button>
+                {highOrCriticalTurbines.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500 text-white shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                    Alert Active
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Nominal Fleet
+                  </span>
+                )}
+              </div>
             </div>
 
             {highOrCriticalTurbines.length > 0 ? (

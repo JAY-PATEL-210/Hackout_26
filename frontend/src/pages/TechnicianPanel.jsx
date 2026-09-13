@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { doc, collection, addDoc, Timestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
+import { scadaAudio } from '../utils/audioAlarm'
 
 const API_BASE = 'http://127.0.0.1:8000'
 
@@ -231,12 +232,14 @@ export default function TechnicianPanel() {
         notes: notes.trim(),
       })
       setLogSuccessMessage(`✓ Work order logged for Turbine ${selectedTurbine}`)
+      scadaAudio.playChime('info')
       setNotes('')
       setTimeout(() => setLogSuccessMessage(null), 4000)
     } catch (err) {
       console.warn('[TechnicianPanel] Error saving maintenance log:', err)
       // Local confirmation fallback
       setLogSuccessMessage(`✓ Work order logged locally for Turbine ${selectedTurbine}`)
+      scadaAudio.playChime('info')
       setNotes('')
       setTimeout(() => setLogSuccessMessage(null), 4000)
     } finally {
@@ -272,14 +275,24 @@ export default function TechnicianPanel() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-200/80 shadow-xs text-xs">
-            <span className="relative flex h-2 w-2">
-              <span className={`animate-ping-slow absolute inline-flex h-full w-full rounded-full opacity-75 ${apiOnline ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${apiOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-            </span>
-            <span className="text-slate-600 font-mono text-[11px] font-bold">
-              {apiOnline ? 'Telemetry Live' : 'Reconnecting'}
-            </span>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => scadaAudio.testAlarm('critical')}
+              className="px-3 py-1.5 rounded-xl text-xs font-space font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs"
+              title="Test SCADA Acoustic Alarm"
+            >
+              <span>🔊</span>
+              <span>Test Alarm</span>
+            </button>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-200/80 shadow-xs text-xs">
+              <span className="relative flex h-2 w-2">
+                <span className={`animate-ping-slow absolute inline-flex h-full w-full rounded-full opacity-75 ${apiOnline ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${apiOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              </span>
+              <span className="text-slate-600 font-mono text-[11px] font-bold">
+                {apiOnline ? 'Telemetry Live' : 'Reconnecting'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
